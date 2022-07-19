@@ -1,23 +1,34 @@
 import Foundation
 
  class Stack {
+     var pop_id = 0
+     var push_id = 0
      var stack = [Chip]()
      let syncQueue = DispatchQueue(label: "stack", qos: .utility, attributes: .concurrent)
 
+     func push(item: Chip) {
+         self.syncQueue.async(flags: .barrier) {
+             self.push_id += 1
+             self.stack.append(Chip.make())
+             print("Создан \(self.push_id)й экземпляр.")
+             print("Время создания: \(Date())")
+             print(" ")
+         }
+     }
+
      func pop() -> Chip {
          var lastElement = Chip.make()
-         self.syncQueue.async(flags: .barrier) {
+         self.syncQueue.async(flags: .barrier) { [self] in
              lastElement = self.stack.popLast() ?? Chip.make()
+             self.pop_id += 1
+             print("Удален \(pop_id)й экземпляр.")
+             print("Время удаления: \(Date())")
+             print(" ")
          }
 
          return lastElement
      }
 
-     func push(item: Chip) {
-         self.syncQueue.async(flags: .barrier) {
-             self.stack.append(Chip.make())
-         }
-     }
  }
 
  var storage = Stack()
@@ -65,10 +76,15 @@ import Foundation
  let workThread = WorkThread()
 
  generationThread.start()
+print("запуск генерирующего потока")
+print("время запуска: \(Date())")
+
  workThread.start()
 
- DispatchQueue.main.asyncAfter(deadline: .now() + 25) {
+ DispatchQueue.main.asyncAfter(deadline: .now() + 20) {
      generationThread.cancel()
+     print("поток остановлен")
+     print("время остановки: \(Date())")
  }
 
  DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
